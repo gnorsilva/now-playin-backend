@@ -34,7 +34,7 @@ class StreamClient(twitterOAuth: OAuthString, streamProcessor: ActorRef, serverH
   }
 
   def connectToStream = {
-    log.info("attempting to connectToStream")
+    log.debug("attempting to connectToStream")
 
     val uri = s"$serverHost/1.1/statuses/filter.json"
     val method = POST
@@ -62,16 +62,16 @@ class StreamClient(twitterOAuth: OAuthString, streamProcessor: ActorRef, serverH
       connectToStream
 
     case HttpResponse(StatusCodes.OK, headers, entity, _) =>
-      log.info("Connected, receiving data")
+      log.debug("Connected, receiving data")
       handleDataStream(entity)
 
     case HttpResponse(statusCode, headers, entity, _) =>
-      log.info(s"$statusCode => $headers")
+      log.debug(s"$statusCode => $headers")
       entity.discardBytes _
       context.system.scheduler.scheduleOnce(10.seconds, self, ConnectToStream())
 
     case Failure(_) =>
-      log.info("Failure")
+      log.debug("Failure")
       context.system.scheduler.scheduleOnce(10.seconds, self, ConnectToStream())
 
   }
@@ -84,11 +84,11 @@ class StreamClient(twitterOAuth: OAuthString, streamProcessor: ActorRef, serverH
       .runForeach(streamProcessor ! StreamMessage(_))
       .onComplete {
         case Success(done) =>
-          log.info(s"onComplete success: $done")
+          log.debug(s"onComplete success: $done")
           connectToStream
 
         case Failure(done) =>
-          log.info(s"onComplete failure :( : $done")
+          log.debug(s"onComplete failure :( : $done")
           connectToStream
       }
   }

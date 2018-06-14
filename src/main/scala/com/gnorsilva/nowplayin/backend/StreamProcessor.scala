@@ -58,9 +58,9 @@ class StreamProcessor(repository: ArtistPlaysRepository) extends Actor with Acto
         val name = extractArtistName(sanitizedText)
         if (name.nonEmpty) {
           repository.insertArtistPlay(ArtistPlay(name, new Date))
-          log.info(s"$name ---> $tweet")
+          log.debug(s"$name ---> $tweet")
         } else {
-          log.info(s"Unparsed: $sanitizedText")
+          log.debug(s"Unparsed: $sanitizedText")
         }
       }
   }

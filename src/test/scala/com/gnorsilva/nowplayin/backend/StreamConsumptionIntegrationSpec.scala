@@ -16,6 +16,7 @@ import reactivemongo.api.Cursor
 import reactivemongo.api.collections.bson.BSONCollection
 import reactivemongo.bson.BSONDocument
 
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 
 
@@ -24,18 +25,21 @@ class StreamConsumptionIntegrationSpec extends FreeSpec with Matchers with Befor
 
   implicit val system = ActorSystem()
   implicit val materializer = ActorMaterializer()
-  implicit val executionContext = system.dispatcher
+  implicit val executionContext: ExecutionContextExecutor = system.dispatcher
+
+  lazy val server = new Server(testDbConfig)
 
   override protected def afterAll(): Unit = {
     super.afterAll
     materializer.shutdown()
     system.terminate().futureValue
+    server.stop
   }
 
   "Incoming streamed messages are parsed and inserted into database" in {
     setupSingleRunStreamingServer
 
-    new Server(testDbConfig).start
+    server.start
 
     eventually {
       val expectedValues = List(
@@ -78,7 +82,7 @@ class StreamConsumptionIntegrationSpec extends FreeSpec with Matchers with Befor
         }
       }
 
-    lazy val futureBinding = Http().bindAndHandle(handler = route, interface = "localhost", port = 8080)
+    lazy val futureBinding = Http().bindAndHandle(handler = route, interface = "localhost", port = 8090)
 
     futureBinding.futureValue
   }
