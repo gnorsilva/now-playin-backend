@@ -18,3 +18,5 @@ libraryDependencies ++= Seq(
 
 testOptions in Test += Tests.Argument("-oF")
 fork in Test := true
+
+enablePlugins(JavaAppPackaging)
