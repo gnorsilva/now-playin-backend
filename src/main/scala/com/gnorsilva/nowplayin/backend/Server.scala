@@ -33,9 +33,10 @@ class Server(dbConfig: MongoDbConfig = MongoDbConfig()) {
   def start: Unit = {
     val mongoDb = MongoDbFactory.loadMongoDb(dbConfig)
     val repository = ArtistPlaysRepository(mongoDb, dbConfig)
+    val artistParser = new ArtistParser
+    val streamProcessor = system.actorOf(Props(classOf[StreamProcessor], artistParser, repository))
 
     val oAuth = new OAuthString(Noncer, Clock, oAuthData)
-    val streamProcessor = system.actorOf(Props(classOf[StreamProcessor], repository))
     val twitterApiUrl = appConf.getString("now-playin.twitter.api.url")
     system.actorOf(Props(classOf[StreamClient], oAuth, streamProcessor, twitterApiUrl))
 
