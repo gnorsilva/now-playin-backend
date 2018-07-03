@@ -1,6 +1,6 @@
 package com.gnorsilva.nowplayin.backend
 
-import java.util.Date
+import java.time.Instant
 
 import akka.actor.{Actor, ActorLogging}
 import com.gnorsilva.nowplayin.backend.ArtistParser.{InvalidArtist, ValidArtist}
@@ -33,7 +33,7 @@ class StreamProcessor(artistParser: ArtistParser, repository: ArtistPlaysReposit
 
         artistParser.parse(tweet) match {
           case ValidArtist(name) =>
-            repository.insertArtistPlay(ArtistPlay(name, new Date))
+            repository.insertArtistPlay(ArtistPlay(name, Instant.now()))
             log.debug(s"$name ---> $tweet")
           case InvalidArtist() =>
             log.debug(s"Unparsed: ${tweet.text}")

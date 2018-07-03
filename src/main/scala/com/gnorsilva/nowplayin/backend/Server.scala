@@ -1,6 +1,7 @@
 package com.gnorsilva.nowplayin.backend
 
 import akka.actor.{ActorSystem, Props}
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import com.gnorsilva.nowplayin.backend.MongoDbFactory.MongoDbConfig
 import com.gnorsilva.nowplayin.backend.OAuthString.{Clock, Noncer, OAuthSecrets}
 import com.typesafe.config.ConfigFactory
@@ -24,6 +25,8 @@ class Server(dbConfig: MongoDbConfig = MongoDbConfig()) {
 
   implicit val system: ActorSystem = ActorSystem()
 
+  implicit val materializer: ActorMaterializer = ActorMaterializer(ActorMaterializerSettings(system))
+
   private val oAuthData = OAuthSecrets(
     consumerKey = appConf.getString("now-playin.twitter.oauth.consumer-key"),
     consumerSecret = appConf.getString("now-playin.twitter.oauth.consumer-secret"),
@@ -42,8 +45,9 @@ class Server(dbConfig: MongoDbConfig = MongoDbConfig()) {
 
     val apiInterface = appConf.getString("now-playin.api.interface")
     val apiPort = appConf.getInt("now-playin.api.port")
-    val apiBinding = Api(apiInterface, apiPort)
-    Await.result(apiBinding, timeout)
+    val streamInterval = appConf.getDuration("now-playin.api.stream-interval")
+    val api = new Api(apiInterface, apiPort, streamInterval, repository)
+    Await.result(api.start(), timeout)
   }
 
   def stop: Unit = {
