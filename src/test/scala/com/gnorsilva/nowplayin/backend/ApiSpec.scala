@@ -62,15 +62,20 @@ class ApiSpec extends FreeSpec with Matchers with BeforeAndAfterAll with OneInst
     setupInitialData()
 
     var lastStreamedData: String = ""
+    var lastStreamEventType: Option[String] = None
 
     Http().singleRequest(HttpRequest(uri = "http://localhost:8080/stream"))
       .flatMap(Unmarshal(_).to[Source[ServerSentEvent, NotUsed]])
-      .foreach(_.runForeach(event => lastStreamedData = event.data))
+      .foreach(_.runForeach { event =>
+        lastStreamedData = event.data
+        lastStreamEventType = event.eventType
+      })
 
     import spray.json._
 
     eventually {
       lastStreamedData.parseJson.prettyPrint shouldBe FirstBatch
+      lastStreamEventType shouldBe Some("nowplayin")
     }
 
     val insertNewData = artistPlays.insert[ArtistPlay](false).many(Seq(
@@ -85,6 +90,7 @@ class ApiSpec extends FreeSpec with Matchers with BeforeAndAfterAll with OneInst
 
     eventually {
       lastStreamedData.parseJson.prettyPrint shouldBe SecondBatch
+      lastStreamEventType shouldBe Some("nowplayin")
     }
   }
 

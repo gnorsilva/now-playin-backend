@@ -13,7 +13,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{BroadcastHub, Keep, Source}
-import com.gnorsilva.nowplayin.backend.Api.{PlayedArtists, PlayedArtistsJsonProtocol}
+import com.gnorsilva.nowplayin.backend.Api._
 import com.gnorsilva.nowplayin.backend.ArtistPlaysRepository.PlayCount
 import spray.json._
 
@@ -22,6 +22,8 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 object Api {
+
+  private val EventType = "nowplayin"
 
   case class PlayedArtists(monthlyTop10: Seq[PlayCount],
                            last5MinutesTop10: Seq[PlayCount],
@@ -65,7 +67,7 @@ class Api(interface: String, port: Int, streamInterval: FiniteDuration, artistPl
   private val dataStream = Source
     .tick(1.seconds, streamInterval, NotUsed)
     .mapAsync(1)(_ => playedArtists())
-    .map(artists => ServerSentEvent(artists.toJson.compactPrint))
+    .map(artists => ServerSentEvent(artists.toJson.compactPrint, EventType))
     .keepAlive(15.second, () => ServerSentEvent.heartbeat)
     .toMat(BroadcastHub.sink(bufferSize = 1))(Keep.right)
     .run()
